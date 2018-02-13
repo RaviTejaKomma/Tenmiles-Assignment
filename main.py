@@ -11,6 +11,10 @@ from apiclient import discovery,errors
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
+import MySQLdb
+import time
+import json
+from pprint import pprint
 
 try:
     import argparse
@@ -24,6 +28,10 @@ SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
 #'https://www.googleapis.com/auth/gmail.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Gmail API Python Quickstart'
+
+def get_connection():
+    conn = MySQLdb.connect(host="localhost",user="root",passwd="raviprince57",db="tenmiles")
+    return conn
 
 def get_credentials():
     """Gets valid user credentials from storage.
@@ -53,9 +61,6 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
-"""
-Get a list of Messages from the user's mailbox.
-"""
 def ListMessagesMatchingQuery(service, user_id, query=''):
   """List all Messages of the user's mailbox matching the query.
 
@@ -87,7 +92,6 @@ def ListMessagesMatchingQuery(service, user_id, query=''):
     return messages
   except errors.HttpError, error:
     print('An error occurred: %s' % error)
-
 
 def ListMessagesWithLabels(service, user_id, label_ids=[]):
   """List all Messages of the user's mailbox with label_ids applied.
@@ -121,6 +125,34 @@ def ListMessagesWithLabels(service, user_id, label_ids=[]):
   except errors.HttpError, error:
     print('An error occurred: %s' % error)
 
+def get_mpart(mail):
+    maintype = mail.get_content_maintype()
+    if maintype == 'multipart':
+        for part in mail.get_payload():
+            # This includes mail body AND text file attachments.
+            if part.get_content_maintype() == 'text':
+                return part.get_payload()
+        # No text at all. This is also happens
+        return ""
+    elif maintype == 'text':
+        return mail.get_payload()
+
+def get_mail_body(mail):
+    """
+    There is no 'body' tag in mail, so separate function.
+    :param mail: Message object
+    :return: Body content
+    """
+    body = ""
+    if mail.is_multipart():
+        # This does not work.
+        # for part in mail.get_payload():
+        #    body += part.get_payload()
+        body = get_mpart(mail)
+    else:
+        body = mail.get_payload()
+    return body
+
 def GetMessage(service, user_id, msg_id):
   """Get a Message with given ID.
 
@@ -135,15 +167,15 @@ def GetMessage(service, user_id, msg_id):
   """
   try:
     message = service.users().messages().get(userId=user_id, id=msg_id,format='raw').execute()
-
-    #print('Message snippet: %s' % message['snippet'])
-
     msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
-
     mime_msg = email.message_from_string(msg_str)
-
-    return mime_msg
-
+    data = {}
+    data['to'] = mime_msg['To']
+    data['from'] = mime_msg['From']
+    data['date'] = mime_msg['Date']
+    data['subject'] = mime_msg['Subject']
+    data['message'] = ""
+    return data
   except errors.HttpError, error:
     print('An error occurred: %s' % error)
 
@@ -158,6 +190,52 @@ def print_all_labels(service,user_id):
         for label in labels:
             print(label['name'])
 
+"""
+Labels:
+CATEGORY_PERSONAL
+CATEGORY_SOCIAL
+IMPORTANT
+CATEGORY_UPDATES
+CATEGORY_FORUMS
+CHAT
+SENT
+INBOX
+TRASH
+CATEGORY_PROMOTIONS
+DRAFT
+SPAM
+STARRED
+UNREAD
+"""
+
+def fetch_and_store(service,user_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    messages = ListMessagesWithLabels(service, user_id, ['INBOX'])
+    for msg in messages:
+        result = GetMessage(service, user_id, msg['id'])
+        result['date'] = " ".join(result['date'].split()[:5])
+        conv = time.strptime(result['date'], "%a, %d %b %Y %H:%M:%S")
+        result['date'] = time.strftime("%Y-%m-%d %H:%M:%S", conv)
+        result['msg_id'] = msg['id']
+        cur.execute(
+            "INSERT INTO mail_data(email_from,email_to,email_subject,email_message,email_received,message_id) VALUES (%s, %s, %s, %s, %s, %s)",
+            (result['from'], result['to'], result['subject'], result['message'], result['date'],str(result['msg_id'])))
+        conn.commit()
+        print('logged successfully')
+    conn.close()
+
+def apply_rules():
+    conn = get_connection()
+    cur = conn.cursor()
+    rules = json.load(open('rules.json'))
+    for rule in rules["1"]["criteria"]:
+        print(rule['name'],rule['value'])
+        query = "SELECT message_id FROM mail_data WHERE " + "email_" + rule["name"] + " LIKE '"+rule["value"][1]+"'"
+        cur.execute(query)
+        print(cur.fetchall())
+
+
 def main():
     """Shows basic usage of the Gmail API.
 
@@ -170,13 +248,9 @@ def main():
     user_id = 'me'
 
     ## get_labels ##
-    print_all_labels(service,user_id)
-
-    messages = ListMessagesWithLabels(service,user_id,['DRAFT'])
-    for msg in messages:
-        print(msg)
-        print(GetMessage(service,user_id,msg['id']))
-
+    #print_all_labels(service,user_id)
+    #fetch_and_store(service,user_id)
+    apply_rules()
 
 
 if __name__ == '__main__':

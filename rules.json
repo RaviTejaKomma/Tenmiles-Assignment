@@ -1,0 +1,62 @@
+{
+ "1":{
+      "predicate" : ["ALL"],
+      "criteria": [
+                    {
+                      "name": "from",
+                      "value": [
+                        "contains",
+                        "jobs-listings@linkedin.com"
+                      ]
+                    },
+                    {
+                      "name": "to",
+                      "value": [
+                        "contains",
+                        "kommaraviteja57@gmail.com"
+                      ]
+                    },
+                    {
+                      "name": "subject",
+                      "value": [
+                        "contains",
+                        "Python/ Django"
+                      ]
+                    }
+                  ],
+      "action": {
+                  "addLabelIds": ["SENT"],
+                  "removeLabelIds": []
+                }
+    },
+  "2":{
+      "predicate" : ["ANY"],
+      "criteria": [
+                    {
+                      "name": "from",
+                      "value": [
+                        "contains",
+                        "jobs-listings@linkedin.com"
+                      ]
+                    },
+                    {
+                      "name": "to",
+                      "value": [
+                        "contains",
+                        "kommaraviteja57@gmail.com"
+                      ]
+                    },
+                    {
+                      "name": "subject",
+                      "value": [
+                        "contains",
+                        "Python/ Django"
+                      ]
+                    }
+                  ],
+      "action": {
+                  "addLabelIds": ["SENT"],
+                  "removeLabelIds": []
+                }
+    }
+}
