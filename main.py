@@ -11,7 +11,7 @@ from apiclient import discovery,errors
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-import MySQLdb
+# import MySQLdb
 import time
 import json
 from pprint import pprint
@@ -24,13 +24,13 @@ except ImportError:
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
+
 SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
-#'https://www.googleapis.com/auth/gmail.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Gmail API Python Quickstart'
 
 def get_connection():
-    conn = MySQLdb.connect(host="localhost",user="root",passwd="raviprince57",db="tenmiles")
+    conn = MySQLdb.connect(host="localhost", user="root", passwd="raviprince57", db="tenmiles")
     return conn
 
 def get_credentials():
@@ -90,7 +90,7 @@ def ListMessagesMatchingQuery(service, user_id, query=''):
       messages.extend(response['messages'])
 
     return messages
-  except errors.HttpError, error:
+  except errors.HttpError as error:
     print('An error occurred: %s' % error)
 
 def ListMessagesWithLabels(service, user_id, label_ids=[]):
@@ -122,7 +122,7 @@ def ListMessagesWithLabels(service, user_id, label_ids=[]):
       messages.extend(response['messages'])
 
     return messages
-  except errors.HttpError, error:
+  except errors.HttpError as error:
     print('An error occurred: %s' % error)
 
 def get_mpart(mail):
@@ -176,7 +176,7 @@ def GetMessage(service, user_id, msg_id):
     data['subject'] = mime_msg['Subject']
     data['message'] = ""
     return data
-  except errors.HttpError, error:
+  except errors.HttpError as error:
     print('An error occurred: %s' % error)
 
 def print_all_labels(service,user_id):
@@ -250,7 +250,7 @@ def main():
     ## get_labels ##
     #print_all_labels(service,user_id)
     #fetch_and_store(service,user_id)
-    apply_rules()
+    #apply_rules()
 
 
 if __name__ == '__main__':
